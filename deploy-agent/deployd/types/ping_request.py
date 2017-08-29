@@ -19,12 +19,13 @@ from deployd.types.agent_status import AgentStatus
 
 class PingRequest(object):
 
-    def __init__(self, hostId=None, hostName=None, hostIp=None, groups=None, reports=None):
+    def __init__(self, hostId=None, hostName=None, hostIp=None, groups=None, reports=None, tags=None):
         self.hostId = hostId
         self.hostName = hostName
         self.hostIp = hostIp
         self.groups = groups
         self.reports = reports
+        self.tags = tags
 
     def to_json(self):
         ping_requests = {}
@@ -33,6 +34,8 @@ class PingRequest(object):
         ping_requests["hostIp"] = self.hostIp
         if self.groups:
             ping_requests["groups"] = list(self.groups)
+        if self.tags:
+            ping_requests["tags"] = list(self.tags)
         ping_requests["reports"] = []
         for report in self.reports:
             ping_report = {}
@@ -61,6 +64,7 @@ class PingRequest(object):
         return ping_requests
 
     def __str__(self):
-        return "PingRequest(hostId={}, hostName={}, hostIp={}, groups={}, " \
+        return "PingRequest(hostId={}, hostName={}, hostIp={}, groups={}, tags={}" \
                "reports={})".format(self.hostId, self.hostName, self.hostIp, self.groups,
-                                    ",".join(str(v) for v in self.reports))
+                                    ",".join(str(v) for v in self.reports),
+                                    ",".join(str(v) for v in self.tags))

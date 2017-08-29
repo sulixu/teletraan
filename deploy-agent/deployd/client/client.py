@@ -30,12 +30,13 @@ log = logging.getLogger(__name__)
 
 class Client(BaseClient):
     def __init__(self, config=None, hostname=None,
-                 ip=None, hostgroup=None, host_id=None, use_facter=None):
+                 ip=None, hostgroup=None, host_id=None, tags=None, use_facter=None):
         self._hostname = hostname
         self._ip = ip
         self._hostgroup = hostgroup
         self._id = host_id
         self._config = config
+        self._tags = tags
         self._use_facter = use_facter
 
     def _read_host_info(self):
@@ -54,6 +55,11 @@ class Client(BaseClient):
                 output = utils.get_info_from_facter(self._config.get_facter_group_key())
                 if output:
                     self._hostgroup = output.split(",")
+
+            if not self._tags and self._config.get_facter_tags_key():
+                output = utils.get_info_from_facter(self._config.get_facter_tags_key())
+                if output:
+                    self._tags = output.split(",")
         else:
             # read host_info file
             host_info_fn = self._config.get_host_info_fn()
@@ -76,6 +82,10 @@ class Client(BaseClient):
                     host_group = host_info.get("groups", None)
                     if host_group:
                         self._hostgroup = host_group.split(",")
+                if not self._tags:
+                    tags = host_info.get("tags", None)
+                    if tags:
+                        self._tags = tags.split(",")
             else:
                 log.warn("Cannot find host information file {}. See doc for more details".format(host_info_fn))
 
@@ -98,8 +108,8 @@ class Client(BaseClient):
                 pass
 
         log.info("Host information is loaded. "
-                 "Host name: {}, IP: {}, host id: {}, group: {}".format(self._hostname, self._ip,
-                                                                        self._id,  self._hostgroup))
+                 "Host name: {}, IP: {}, host id: {}, group: {}, tags: {}".format(self._hostname, self._ip,
+                                                                        self._id,  self._hostgroup, self._tags))
         return True
 
     def send_reports(self, env_reports=None):
@@ -116,7 +126,7 @@ class Client(BaseClient):
                     if report.errorMessage:
                         report.errorMessage = report.errorMessage.encode('ascii', 'ignore')
                 ping_request = PingRequest(hostId=self._id, hostName=self._hostname, hostIp=self._ip,
-                                        groups=self._hostgroup, reports=reports)
+                                        groups=self._hostgroup, reports=reports, tags=self._tags)
 
                 with create_stats_timer('deploy.agent.request.latency',
                                         sample_rate=1.0,
